@@ -10,7 +10,7 @@
   # Uncomment one or all of the following optional variables
   # Note: If you uncomment 'identity-path' you must also uncomment 'token-app-property'
   # Note: If you uncomment 'public-keys' above you must also uncomment 'issuer'
-  #- !variable ca-cert
+  - !variable ca-cert
   - !variable token-app-property
   - !variable identity-path
   - !variable issuer

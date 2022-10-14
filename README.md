@@ -66,18 +66,43 @@ podman exec conjur sed -i -e '/authenticators:/a\  - authn-jwt/gitlab' /etc/conj
 podman exec conjur evoke configuration apply
 ```
 
+- Inject the CA certificate into a environment variable to be set into Conjur variable
+- The Jenkins server certificate in this demo is signed by a personal CA (`central.pem`), you should use your own certificate chain in your own environment
+- ☝️ **Note**: The `authn-jwt/<service-id>/ca-cert` variable is implemented begining from Conjur version 12.5. If you are using an older version of Conjur, the CA certificates needs to be trusted by the Conjur container. Read the `Archived - Trusting CA certificate in Conjur container` section at the end of this page.
+
+```console
+CA_CERT="$(curl https://raw.githubusercontent.com/joetanx/conjur-jenkins/main/central.pem)"
+```
+
 - Populate the variables
 - Assumes that the secret variables in `world_db` and `aws_api` are already populated in step 2 (Setup Conjur master)
 
 ```console
 conjur variable set -i conjur/authn-jwt/gitlab/jwks-uri -v https://gitlab.vx/-/jwks/
+conjur variable set -i conjur/authn-jwt/jenkins/ca-cert -v "$CA_CERT"
 conjur variable set -i conjur/authn-jwt/gitlab/token-app-property -v project_path
 conjur variable set -i conjur/authn-jwt/gitlab/identity-path -v jwt-apps/gitlab
 conjur variable set -i conjur/authn-jwt/gitlab/issuer -v https://gitlab.vx
 ```
 
-- Clean-up
+# Archived - Trusting CA certificate in Conjur container
+
+- For Conjur versions before 12.5, the `authn-jwt/<service-id>/ca-cert` variable was not yet implemented.
+- If you are using a self-signed or custom certificate chain in your jenkins like I did in this demo, you will encounter the following error in Conjur, because the Jenkins certificate chain is not trusted by Conjur applicance.
 
 ```console
-rm -f *.yaml
+USERNAME_MISSING failed to authenticate with authenticator authn-jwt service cyberark:webservice:conjur/authn-jwt/jenkins:
+**CONJ00087E** Failed to fetch JWKS from 'https://jenkins.vx:8443/jwtauth/conjur-jwk-set'.
+Reason: '#<OpenSSL::SSL::SSLError: SSL_connect returned=1 errno=0 state=error: certificate verify failed (self signed certificate in certificate chain)>'
+```
+
+- Import your Jenkins certificate or the root CA certificate to Conjur appliance
+- **Note**: The hash of my CA certificate is **a3280000**, hence I need to create a link **a3280000.0** to my CA certificate. You will need to get the hash of your own CA certificate from the openssl command, and link the certificate to `/etc/ssl/certs/<your-ca-hash>.0`
+- This procedure is documented in: <https://cyberark-customers.force.com/s/article/Conjur-CONJ0087E-Failed-to-fetch-JWKS-from-GitLab-certificate-verify-failed>
+
+```console
+curl -O https://raw.githubusercontent.com/joetanx/conjur-jenkins/main/central.pem
+podman cp central.pem conjur:/etc/ssl/certs/central.pem
+podman exec conjur openssl x509 -noout -hash -in /etc/ssl/certs/central.pem
+podman exec conjur ln -s /etc/ssl/certs/central.pem /etc/ssl/certs/a3280000.0
 ```

@@ -112,24 +112,39 @@ podman exec conjur ln -s /etc/ssl/certs/central.pem /etc/ssl/certs/a3280000.0
 ## Configure MySQL Demo project
 
 ```console
-getDatabases:
+Fetch variables from Conjur:
+  stage: .pre
+  script:
+    - 'SESSIONTOKEN=$(curl -X POST https://conjur.vx/authn-jwt/gitlab/cyberark/authenticate -H "Content-Type: application/x-www-form-urlencoded" -H "Accept-Encoding: base64" --data-urlencode "jwt=$CI_JOB_JWT_V2")'
+    - 'MYSQLUSER=$(curl -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/world_db/username)'
+    - 'MYSQLPASSWORD=$(curl -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/world_db/password)'
+    - echo MYSQLUSER=$MYSQLUSER >> conjurVariables.env
+    - echo MYSQLPASSWORD=$MYSQLPASSWORD >> conjurVariables.env
+  artifacts:
+    reports:
+      dotenv: conjurVariables.env
+Show databases using variables from Conjur:
   stage: test
   script:
-    - 'export SESSIONTOKEN=$(curl -X POST https://conjur.vx/authn-jwt/gitlab/cyberark/authenticate -H "Content-Type: application/x-www-form-urlencoded" -H "Accept-Encoding: base64" --data-urlencode "jwt=$CI_JOB_JWT_V2")'
-    - 'export MYSQLUSER=$(curl -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/world_db/username)'
-    - 'export MYSQLPASSWORD=$(curl -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/world_db/password)'
     - mysql --host=mysql.vx --user=$MYSQLUSER --password=$MYSQLPASSWORD -e "SHOW DATABASES;"
 ```
 
 ## Configure AWS Access Key Demo project
 
 ```console
-awsListUsers:
+Fetch variables from Conjur:
+  stage: .pre
+  script:
+    - 'SESSIONTOKEN=$(curl -X POST https://conjur.vx/authn-jwt/gitlab/cyberark/authenticate -H "Content-Type: application/x-www-form-urlencoded" -H "Accept-Encoding: base64" --data-urlencode "jwt=$CI_JOB_JWT_V2")'
+    - 'AWS_ACCESS_KEY_ID=$(curl -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/aws_api/awsakid)'
+    - 'AWS_SECRET_ACCESS_KEY=$(curl -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/aws_api/awssak)'
+    - echo AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID >> conjurVariables.env
+    - echo AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY >> conjurVariables.env
+  artifacts:
+    reports:
+      dotenv: conjurVariables.env
+List users in AWS using variables from Conjur:
   stage: test
   script:
-    - export AWS_DEFAULT_REGION=ap-southeast-1
-    - 'SESSIONTOKEN=$(curl -X POST https://conjur.vx/authn-jwt/gitlab/cyberark/authenticate -H "Content-Type: application/x-www-form-urlencoded" -H "Accept-Encoding: base64" --data-urlencode "jwt=$CI_JOB_JWT_V2")'
-    - 'export AWS_ACCESS_KEY_ID=$(curl -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/aws_api/awsakid)'
-    - 'export AWS_SECRET_ACCESS_KEY=$(curl -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/aws_api/awssak)'
     - aws iam list-users
 ```

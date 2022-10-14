@@ -79,7 +79,7 @@ CA_CERT="$(curl https://raw.githubusercontent.com/joetanx/conjur-gitlab/main/cen
 
 ```console
 conjur variable set -i conjur/authn-jwt/gitlab/jwks-uri -v https://gitlab.vx/-/jwks/
-conjur variable set -i conjur/authn-jwt/jenkins/ca-cert -v "$CA_CERT"
+conjur variable set -i conjur/authn-jwt/gitlab/ca-cert -v "$CA_CERT"
 conjur variable set -i conjur/authn-jwt/gitlab/token-app-property -v project_path
 conjur variable set -i conjur/authn-jwt/gitlab/identity-path -v jwt-apps/gitlab
 conjur variable set -i conjur/authn-jwt/gitlab/issuer -v https://gitlab.vx

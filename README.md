@@ -222,6 +222,8 @@ Show databases using variables from Conjur:
 ## 5.2. Configure AWS Access Key Demo project
 
 ```console
+variables:
+  AWS_DEFAULT_REGION: ap-southeast-1
 Fetch variables from Conjur:
   stage: .pre
   script:

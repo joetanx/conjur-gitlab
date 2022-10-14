@@ -71,7 +71,7 @@ podman exec conjur evoke configuration apply
 - ☝️ **Note**: The `authn-jwt/<service-id>/ca-cert` variable is implemented begining from Conjur version 12.5. If you are using an older version of Conjur, the CA certificates needs to be trusted by the Conjur container. Read the `Archived - Trusting CA certificate in Conjur container` section at the end of this page.
 
 ```console
-CA_CERT="$(curl https://raw.githubusercontent.com/joetanx/conjur-jenkins/main/central.pem)"
+CA_CERT="$(curl https://raw.githubusercontent.com/joetanx/conjur-gitlab/main/central.pem)"
 ```
 
 - Populate the variables

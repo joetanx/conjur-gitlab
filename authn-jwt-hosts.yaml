@@ -1,0 +1,25 @@
+- !policy
+  id: jwt-apps/gitlab
+  body:
+  - !layer
+  - &hosts
+    - !host
+      id: cybr/aws-access-key-demo
+      annotations:
+        authn-jwt/gitlab/sub: project_path:cybr/aws-access-key-demo:ref_type:branch:ref:main
+    - !host
+      id: cybr/mysql-demo
+      annotations:
+        authn-jwt/gitlab/sub: project_path:cybr/mysql-demo:ref_type:branch:ref:main
+  - !grant 
+    role: !layer
+    members: *hosts
+- !grant
+  role: !group conjur/authn-jwt/gitlab/consumers
+  member: !layer jwt-apps/gitlab
+- !grant
+  role: !group aws_api/consumers
+  member: !host jwt-apps/gitlab/cybr/aws-access-key-demo
+- !grant
+  role: !group world_db/consumers
+  member: !host jwt-apps/gitlab/cybr/mysql-demo

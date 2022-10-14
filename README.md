@@ -115,9 +115,9 @@ podman exec conjur ln -s /etc/ssl/certs/central.pem /etc/ssl/certs/a3280000.0
 getDatabases:
   stage: test
   script:
-    - 'SESSIONTOKEN=$(curl -X POST https://conjur.vx/authn-jwt/gitlab/cyberark/authenticate -H "Content-Type: application/x-www-form-urlencoded" -H "Accept-Encoding: base64" --data-urlencode "jwt=$CI_JOB_JWT_V2")'
-    - 'MYSQLUSER=$(curl -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/world_db/username)'
-    - 'MYSQLPASSWORD=$(curl -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/world_db/password)'
+    - 'export SESSIONTOKEN=$(curl -X POST https://conjur.vx/authn-jwt/gitlab/cyberark/authenticate -H "Content-Type: application/x-www-form-urlencoded" -H "Accept-Encoding: base64" --data-urlencode "jwt=$CI_JOB_JWT_V2")'
+    - 'export MYSQLUSER=$(curl -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/world_db/username)'
+    - 'export MYSQLPASSWORD=$(curl -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/world_db/password)'
     - mysql --host=mysql.vx --user=$MYSQLUSER --password=$MYSQLPASSWORD -e "SHOW DATABASES;"
 ```
 

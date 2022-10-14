@@ -53,8 +53,8 @@ conjur login -i admin -p CyberArk123!
 ```console
 curl -O https://raw.githubusercontent.com/joetanx/conjur-gitlab/main/authn-jwt.yaml
 curl -O https://raw.githubusercontent.com/joetanx/conjur-gitlab/main/authn-jwt-hosts.yaml
-conjur policy load -b root -f authn-jwt.yaml
-conjur policy load -b root -f authn-jwt-hosts.yaml
+conjur policy load -b root -f authn-jwt.yaml && rm -f authn-jwt.yaml
+conjur policy load -b root -f authn-jwt-hosts.yaml && rm -f authn-jwt-hosts.yaml
 ```
 
 - Enable the JWT Authenticator

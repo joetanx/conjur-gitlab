@@ -92,11 +92,94 @@
 
 ## 3.1. Setup GitLab instance
 
+### 3.1.1. Install GitLab instance
+
+Ref: <https://computingforgeeks.com/how-to-install-and-configure-gitlab-on-centos-rhel/>
+
+| Steps | Commands |
+|---|---|
+| Download repository script | `curl -O https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.rpm.sh` |
+| Add execute permission to script | `chmod u+x script.rpm.sh` |
+| Setup GitLab repository¹ | `os=el dist=8 ./script.rpm.sh` |
+| Install GitLab | `yum -y install gitlab-ce` |
+| Add firewall rules | `firewall-cmd --add-service=https --permanent && firewall-cmd --reload` |
+| Clean-up | `rm -f  script.rpm.sh /etc/yum.repos.d/gitlab_gitlab-ce.repo` |
+
+¹ GitLab is not supported on RHEL 9 at point of writing, hence `os=el dist=8` is used here to set the OS and distribution to RHEL 8 for installation
+
+### 3.1.2. Configure GitLab instance
+
+Edit the GitLab configuration file at `/etc/gitlab/gitlab.rb`
+
+#### External URL
+
+```console
+external_url 'https://gitlab.vx'
+```
+
+#### Initial root password
+
+```console
+gitlab_rails['initial_root_password'] = "Cyberark1"
+```
+
+#### Nginx SSL certificate
+
+Ref: <https://computingforgeeks.com/how-to-secure-gitlab-server-with-ssl-certificate/>
+
+```console
+nginx['ssl_certificate'] = "/etc/gitlab/ssl/gitlab.vx.crt"
+nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/gitlab.vx.key"
+```
+
+#### Nginx listening port
+
+```console
+nginx['listen_port'] = 6443
+```
+
+#### Commit GitLab configuration
+
+```console
+gitlab-ctl reconfigure
+```
+
 ## 3.2. Setup GitLab runner
 
-## 3.3. PLACEHOLDER
+### 3.2.1. Install GitLab runner
 
-## 3.4. Prepare MySQL and AWS CLI client tools
+| Steps | Commands |
+|---|---|
+| Download repository script | `curl -O https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.rpm.sh` |
+| Add execute permission to script | `chmod u+x script.rpm.sh` |
+| Setup GitLab repository¹ | `os=el dist=8 ./script.rpm.sh` |
+| Install GitLab | `yum -y install gitlab-runner` |
+| Allow `gitlab-runner` user to sudo without password prompt | `echo 'gitlab-runner ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers.d/gitlab-runner` |
+| Clean-up | `rm -f  script.rpm.sh /etc/yum.repos.d/runner_gitlab-runner.repo` |
+
+¹ GitLab is not supported on RHEL 9 at point of writing, hence `os=el dist=8` is used here to set the OS and distribution to RHEL 8 for installation
+
+### 3.2.2. Register GitLab runner
+
+GitLab runner can be added as a shared or project-specific runner
+
+#### Generate registration token
+
+- Shared runner
+
+![image](images/add-runner-shared.png)
+
+- Project-specific runner
+
+![image](images/add-runner-project.png)
+
+#### Register the runner
+
+```console
+gitlab-runner register --name cybr-demo-runner --url https://gitlab.vx --registration-token <registration-token>
+```
+
+## 3.3. Prepare MySQL and AWS CLI client tools
 
 MySQL and AWS CLI client tools are needed in the GitLab runner execution later
 

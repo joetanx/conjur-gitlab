@@ -1,5 +1,3 @@
-# UNDER CONSTRUCTION
-
 # Integrate GitLab with Conjur Enterprise using the JWT authenticator
 
 ## Introduction
@@ -284,6 +282,22 @@ conjur variable set -i conjur/authn-jwt/gitlab/issuer -v https://gitlab.vx
 
 ## 5.1. Configure MySQL Demo project
 
+### Create a new project
+
+☝️ Note: the `project namepace` + `project slug` forms the `project path`, this must match the `host identity` created in the Conjur policy
+
+![image](images/mysql-new-project.png)
+
+### Edit the GitLab CI/CD file
+
+There are 2 jobs in the pipeline code below:
+1. Fetch variables from Conjur
+  - Authenticate to Conjur `authn-jwt/gitlab` using `CI_JOB_JWT_V2` for a session token
+  - Retrive database credentials using the session token
+  - Pass the credentials to the next job using `artifacts: reports: dotenv:`
+2. Show databases using variables from Conjur
+  - Login to the MySQL database to perform a `SHOW DATABASES` command using the credentials from previous job
+
 ```console
 Fetch variables from Conjur:
   stage: .pre
@@ -302,7 +316,39 @@ Show databases using variables from Conjur:
     - mysql --host=mysql.vx --user=$MYSQLUSER --password=$MYSQLPASSWORD -e "SHOW DATABASES;"
 ```
 
+![image](images/mysql-editor.png)
+
+### Pipeline run results
+
+Both jobs passed in the pipeline:
+
+![image](images/mysql-pipeline-passed.png)
+
+Output for fetch variables job:
+
+![image](images/mysql-job-1.png)
+
+Output for show databases job:
+
+![image](images/mysql-job-2.png)
+
 ## 5.2. Configure AWS Access Key Demo project
+
+### Create a new project
+
+☝️ Note: the `project namepace` + `project slug` forms the `project path`, this must match the `host identity` created in the Conjur policy
+
+![image](images/aws-new-project.png)
+
+### Edit the GitLab CI/CD file
+
+There are 2 jobs in the pipeline code below:
+1. Fetch variables from Conjur
+  - Authenticate to Conjur `authn-jwt/gitlab` using `CI_JOB_JWT_V2` for a session token
+  - Retrive AWS credentials using the session token
+  - Pass the credentials to the next job using `artifacts: reports: dotenv:`
+2. Show databases using variables from Conjur
+  - Run AWS CLI perform a `iam list-users` command using the credentials from previous job
 
 ```console
 variables:
@@ -323,6 +369,22 @@ List users in AWS using variables from Conjur:
   script:
     - aws iam list-users
 ```
+
+![image](images/aws-editor.png)
+
+### Pipeline run results
+
+Both jobs passed in the pipeline:
+
+![image](images/aws-pipeline-passed.png)
+
+Output for fetch variables job:
+
+![image](images/aws-job-1.png)
+
+Output for list users job:
+
+![image](images/aws-job-2.png)
 
 
 # Archived - Trusting CA certificate in Conjur container

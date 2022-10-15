@@ -14,7 +14,7 @@
 
 ![image](images/Architecture.png)
 
-① Every GitLab CI/CD pipeline has a `CI_JOB_JWT_V2` JSON web token in the predefined variables
+① Every GitLab CI/CD pipeline has a `CI_JOB_JWT_V2` JSON web token in the [predefined variables](https://docs.gitlab.com/ee/ci/variables/predefined_variables.html)
 
 - Example JWT
 

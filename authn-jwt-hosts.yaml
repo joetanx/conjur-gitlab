@@ -1,8 +1,10 @@
+- !group gitlab-admins
 - !policy
   id: jwt-apps/gitlab
+  owner: !group gitlab-admins
   body:
   - !layer
-  - &hosts
+  - &gitlab-hosts
     - !host
       id: cybr/aws-access-key-demo
       annotations:
@@ -13,7 +15,7 @@
         authn-jwt/gitlab/sub: project_path:cybr/mysql-demo:ref_type:branch:ref:main
   - !grant 
     role: !layer
-    members: *hosts
+    members: *gitlab-hosts
 - !grant
   role: !group conjur/authn-jwt/gitlab/consumers
   member: !layer jwt-apps/gitlab

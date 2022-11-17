@@ -1,4 +1,6 @@
-- !group gitlab-admins
+- !group
+  id: gitlab-admins
+  owner: !policy root
 - !policy
   id: jwt-apps/gitlab
   owner: !group gitlab-admins

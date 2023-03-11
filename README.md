@@ -142,6 +142,16 @@ nginx['listen_port'] = 6443
 gitlab-ctl reconfigure
 ```
 
+### 3.1.2. (Optional) Edit group
+
+- Change group name
+
+![image](images/group-change-name.png)
+
+- Change group URL
+
+![image](images/group-change-url.png)
+
 ## 3.2. Setup GitLab runner
 
 ### 3.2.1. Install GitLab runner

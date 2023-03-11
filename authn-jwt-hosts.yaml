@@ -25,5 +25,5 @@
   role: !group aws_api/consumers
   member: !host jwt-apps/gitlab/cybr/aws-access-key-demo
 - !grant
-  role: !group world_db/consumers
+  role: !group db_cicd/consumers
   member: !host jwt-apps/gitlab/cybr/mysql-demo

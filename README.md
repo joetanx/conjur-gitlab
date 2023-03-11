@@ -7,8 +7,8 @@
 - Each project on GitLab retrieving credentials will have its JWT signed and verified via the JWKS.
 - This mitigates the "secret-zero" problem and enable each project on GitLab to be uniquely identified.
 - The demonstration will run 2 projects:
-  - MySQL Demo: Run a sql command to show databases using the credentials retrieved from Conjur
-  - AWS Access Key Demo: Run an AWS CLI command to list users using the credentials retrieved from Conjur
+  - MySQL Demo: Run a sql command to `SELECT` a random row from a database using the credentials retrieved from Conjur
+  - AWS Access Key Demo: Run an AWS CLI command to test and show the caller STS token using the credentials retrieved from Conjur
 
 ## How does GitLab integration with Conjur using JWT work?
 

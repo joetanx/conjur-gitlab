@@ -66,9 +66,9 @@
 
 ### Software Versions
 
-- RHEL 9.0
-- GitLab 15.4.0
-- Conjur Enterprise 12.7.0.1
+- RHEL 9.1
+- GitLab 15.9.3
+- Conjur Enterprise 12.9.0
 
 ### Servers
 

@@ -80,7 +80,7 @@
 
 # 1. Setup MySQL database
 
-- Setup MySQL database according to this guide: <https://github.com/joetanx/mysql-world_db>
+- Setup MySQL database according to this guide: <https://github.com/joetanx/mysql-install>
 
 # 2. Setup Conjur master
 
@@ -229,7 +229,7 @@ unzip awscli-exe-linux-x86_64.zip
   - the `id` of the `host` corresponds to the `token-app-property`
   - annotations of the `host` are optional and corresponds to claims in the JWT token claims - the more specific the annotations/claims configured, the more precise and secure the application authentication
 - the host layer is granted as a member of the `consumers` group defined in `authn-jwt.yaml` to authorize them to authenticate to the JWT authenticator
-- `cybr/aws-access-key-demo` and `cybr/mysql-demo` are granted access to secrets in `aws_api` and `world_db` by granting them as members of the respective `consumers` group defined in `app-vars.yaml`
+- `cybr/aws-access-key-demo` and `cybr/mysql-demo` are granted access to secrets in `aws_api` and `db_cicd` by granting them as members of the respective `consumers` group defined in `app-vars.yaml`
 - ☝️ **Note**: `authn-jwt-hosts.yaml` builds on top of `app-vars.yaml` in <https://github.com/joetanx/conjur-master>. Loading `authn-jwt-hosts.yaml` without having `app-vars.yaml` loaded previously will not work.
 
 ## 4.2. Load the Conjur policies and prepare Conjur for GitLab JWT
@@ -268,7 +268,7 @@ CA_CERT="$(curl https://raw.githubusercontent.com/joetanx/conjur-gitlab/main/cen
 ```
 
 - Populate the variables
-- Assumes that the secret variables in `world_db` and `aws_api` are already populated in step 2 (Setup Conjur master)
+- Assumes that the secret variables in `db_cicd` and `aws_api` are already populated in step 2 (Setup Conjur master)
 
 ```console
 conjur variable set -i conjur/authn-jwt/gitlab/jwks-uri -v https://gitlab.vx/-/jwks/
@@ -295,25 +295,25 @@ There are 2 jobs in the pipeline code below:
   - Authenticate to Conjur `authn-jwt/gitlab` using `CI_JOB_JWT_V2` for a session token
   - Retrive database credentials using the session token
   - Pass the credentials to the next job using `artifacts: reports: dotenv:`
-2. Show databases using variables from Conjur
-  - Login to the MySQL database to perform a `SHOW DATABASES` command using the credentials from previous job
+2. Get a random row from database using variables from Conjur
+  - Login to the MySQL database to perform a `SELECT` command using the credentials from previous job
 
 ```console
 Fetch variables from Conjur:
   stage: .pre
   script:
     - 'SESSIONTOKEN=$(curl -X POST https://conjur.vx/authn-jwt/gitlab/cyberark/authenticate -H "Content-Type: application/x-www-form-urlencoded" -H "Accept-Encoding: base64" --data-urlencode "jwt=$CI_JOB_JWT_V2")'
-    - 'MYSQLUSER=$(curl -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/world_db/username)'
-    - 'MYSQLPASSWORD=$(curl -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/world_db/password)'
+    - 'MYSQLUSER=$(curl -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/db_cicd/username)'
+    - 'MYSQLPASSWORD=$(curl -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/db_cicd/password)'
     - echo MYSQLUSER=$MYSQLUSER >> conjurVariables.env
     - echo MYSQLPASSWORD=$MYSQLPASSWORD >> conjurVariables.env
   artifacts:
     reports:
       dotenv: conjurVariables.env
-Show databases using variables from Conjur:
+Get a random row from database using variables from Conjur:
   stage: test
   script:
-    - mysql --host=mysql.vx --user=$MYSQLUSER --password=$MYSQLPASSWORD -e "SHOW DATABASES;"
+    - mysql --host=mysql.vx --user=$MYSQLUSER --password=$MYSQLPASSWORD -e 'SELECT city.Name as City,country.name as Country,city.District,city.Population FROM world.city,world.country WHERE city.CountryCode = country.Code ORDER BY RAND() LIMIT 0,1;'
 ```
 
 ![image](images/mysql-editor.png)
@@ -347,8 +347,8 @@ There are 2 jobs in the pipeline code below:
   - Authenticate to Conjur `authn-jwt/gitlab` using `CI_JOB_JWT_V2` for a session token
   - Retrive AWS credentials using the session token
   - Pass the credentials to the next job using `artifacts: reports: dotenv:`
-2. Show databases using variables from Conjur
-  - Run AWS CLI perform a `iam list-users` command using the credentials from previous job
+2. Check caller AWS STS token in AWS variables from Conjur
+  - Run AWS CLI perform a `sts get-caller-identity` command using the credentials from previous job
 
 ```console
 variables:
@@ -364,10 +364,10 @@ Fetch variables from Conjur:
   artifacts:
     reports:
       dotenv: conjurVariables.env
-List users in AWS using variables from Conjur:
+Check caller AWS STS token in AWS using variables from Conjur:
   stage: test
   script:
-    - aws iam list-users
+    - aws sts get-caller-identity
 ```
 
 ![image](images/aws-editor.png)

@@ -101,7 +101,7 @@ Ref: <https://computingforgeeks.com/how-to-install-and-configure-gitlab-on-cento
 | Setup GitLab repository¹ | `os=el dist=8 ./script.rpm.sh` |
 | Install GitLab | `yum -y install gitlab-ce` |
 | Add firewall rules | `firewall-cmd --add-service=https --permanent && firewall-cmd --reload` |
-| Clean-up | `rm -f  script.rpm.sh /etc/yum.repos.d/gitlab_gitlab-ce.repo` |
+| Clean-up | `rm -f script.rpm.sh /etc/yum.repos.d/gitlab_gitlab-ce.repo` |
 
 ¹ GitLab is not supported on RHEL 9 at point of writing, hence `os=el dist=8` is used here to set the OS and distribution to RHEL 8 for installation
 

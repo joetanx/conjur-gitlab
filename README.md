@@ -148,7 +148,7 @@ gitlab-ctl reconfigure
 
 | Steps | Commands |
 |---|---|
-| Download repository script | `wget https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.rpm.sh` |
+| Download repository script | `curl -O https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.rpm.sh` |
 | Add execute permission to script | `chmod u+x script.rpm.sh` |
 | Setup GitLab repository¹ | `os=el dist=8 ./script.rpm.sh` |
 | Install GitLab | `yum -y install gitlab-runner` |

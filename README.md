@@ -67,6 +67,7 @@
 ### Software Versions
 
 - RHEL 9.1
+- Podman 4.2
 - GitLab 15.9.3
 - Conjur Enterprise 12.9.0
 
@@ -154,7 +155,26 @@ gitlab-ctl reconfigure
 
 ## 3.2. Setup GitLab runner
 
-### 3.2.1. Install GitLab runner
+We'd be using Docker (Podman) executor for our GitLab runner
+
+### 3.2.1. Prepare Podman environment
+
+1. Install podman
+2. Enable it to start on boot-up
+3. Pull the following container images:
+  - `docker.io/alpine/curl:latest`: used to call Conjur APIs, will be set as default image for GitLab runner
+  - `docker.io/library/mysql:latest`: used for the MySQL connection demo
+  - `docker.io/amazon/aws-cli:latest`: used for the AWS CLI demo
+  - `docker.io/hashicorp/terraform:latest`: used for the Terraform demo
+  - `registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:latest`: GitLab runner required
+
+```console
+yum -y install podman
+systemctl enable --now podman.socket
+podman pull docker.io/alpine/curl:latest docker.io/library/mysql:latest docker.io/amazon/aws-cli:latest docker.io/hashicorp/terraform:latest registry.gitlab.com/gitlab-org/gitlab-runner/gitlab-runner-helper:latest
+```
+
+### 3.2.2. Install GitLab runner
 
 | Steps | Commands |
 |---|---|
@@ -167,7 +187,25 @@ gitlab-ctl reconfigure
 
 ¹ GitLab is not supported on RHEL 9 at point of writing, hence `os=el dist=8` is used here to set the OS and distribution to RHEL 8 for installation
 
-### 3.2.2. Register GitLab runner
+### 3.2.3. Prepare config template for GitLab runner registration
+
+```console
+cat  << EOF >> /tmp/test-config.template.toml
+[[runners]]
+[runners.docker]
+host = "unix:///run/podman/podman.sock"
+extra_hosts = ["conjur.vx:192.168.17.90","mysql.vx:192.168.17.90","gitlab.vx:192.168.17.91"]
+EOF
+```
+
+Configurations used:
+- `host = "unix:///run/podman/podman.sock"` is required to [use Podman to run Docker commands](https://docs.gitlab.com/runner/executors/docker.html#use-podman-to-run-docker-commands)
+- `extra_hosts = ["conjur.vx:192.168.17.90","mysql.vx:192.168.17.90","gitlab.vx:192.168.17.91"]` to [add the host records](https://docs.gitlab.com/runner/configuration/advanced-configuration.html#the-runnersdocker-section) to `/etc/hosts` of the containers
+  - (Detailed explanation on why I need this in my internal lab instead of adding DNS records:
+    - Containers queries dual-stacked (`A` and `AAAA`) name resolution
+    - My `.vx` domain results in a `NXDOMAIN for the `AAAA` (IPv6), since I only have `A` (IPv4) records of the hosts in my DNS
+
+### 3.2.4. Register GitLab runner
 
 GitLab runner can be added as a shared or project-specific runner
 
@@ -184,26 +222,13 @@ GitLab runner can be added as a shared or project-specific runner
 #### Register the runner
 
 ```console
-gitlab-runner register --name cybr-demo-runner --url https://gitlab.vx --registration-token <registration-token>
-```
-
-## 3.3. Prepare MySQL and AWS CLI client tools
-
-MySQL and AWS CLI client tools are needed in the GitLab runner execution later
-
-### 3.4.1. Setup MySQL client
-
-```console
-yum -y install mysql
-```
-
-### 3.4.2. Setup AWS CLI
-
-```console
-yum -y install unzip
-curl -O https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
-unzip awscli-exe-linux-x86_64.zip
-./aws/install && rm -rf aws*
+gitlab-runner register \
+--name cybr-podman-runner \
+--url "https://gitlab.vx/" \
+--registration-token <registration-token> \
+--executor "docker" \
+--template-config /tmp/test-config.template.toml \
+--docker-image docker.io/alpine/curl:latest
 ```
 
 # 4. Conjur policies for GitLab JWT
@@ -301,27 +326,31 @@ conjur variable set -i conjur/authn-jwt/gitlab/issuer -v https://gitlab.vx
 ### Edit the GitLab CI/CD file
 
 There are 2 jobs in the pipeline code below:
-1. Fetch variables from Conjur
+1. Fetch variables from Conjur (using `docker.io/alpine/curl:latest` image)
   - Authenticate to Conjur `authn-jwt/gitlab` using `CI_JOB_JWT_V2` for a session token
   - Retrive database credentials using the session token
-  - Pass the credentials to the next job using `artifacts: reports: dotenv:`
-2. Get a random row from database using variables from Conjur
+  - Pass the credentials to the next job using `artifacts:`, `reports:, `dotenv:`
+2. Get a random row from database using variables from Conjur (using `docker.io/library/mysql:latest` image)
   - Login to the MySQL database to perform a `SELECT` command using the credentials from previous job
 
-```console
+```yaml
 Fetch variables from Conjur:
+# Using default image docker.io/alpine/curl:latest configured in gitlab runner
   stage: .pre
+  before_script:
+    - 'SESSIONTOKEN=$(curl -k -X POST https://conjur.vx/authn-jwt/gitlab/cyberark/authenticate -H "Content-Type: application/x-www-form-urlencoded" -H "Accept-Encoding: base64" --data-urlencode "jwt=$CI_JOB_JWT_V2")'
+    - 'MYSQLUSER=$(curl -k -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/db_cicd/username)'
+    - 'MYSQLPASSWORD=$(curl -k -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/db_cicd/password)'
   script:
-    - 'SESSIONTOKEN=$(curl -X POST https://conjur.vx/authn-jwt/gitlab/cyberark/authenticate -H "Content-Type: application/x-www-form-urlencoded" -H "Accept-Encoding: base64" --data-urlencode "jwt=$CI_JOB_JWT_V2")'
-    - 'MYSQLUSER=$(curl -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/db_cicd/username)'
-    - 'MYSQLPASSWORD=$(curl -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/db_cicd/password)'
     - echo MYSQLUSER=$MYSQLUSER >> conjurVariables.env
     - echo MYSQLPASSWORD=$MYSQLPASSWORD >> conjurVariables.env
   artifacts:
     reports:
       dotenv: conjurVariables.env
 Get a random row from database using variables from Conjur:
-  stage: test
+  image:
+    name: docker.io/library/mysql:latest
+    entrypoint: [""]
   script:
     - mysql --host=mysql.vx --user=$MYSQLUSER --password=$MYSQLPASSWORD -e 'SELECT city.Name as City,country.name as Country,city.District,city.Population FROM world.city,world.country WHERE city.CountryCode = country.Code ORDER BY RAND() LIMIT 0,1;'
 ```
@@ -342,60 +371,159 @@ Output for show databases job:
 
 ![image](images/mysql-job-2.png)
 
-## 5.2. Configure AWS Access Key Demo project
+## 5.2. Configure AWS CLI Demo project
 
 ### Create a new project
 
 ☝️ Note: the `project namepace` + `project slug` forms the `project path`, this must match the `host identity` created in the Conjur policy
 
-![image](images/aws-new-project.png)
+![image](images/aws-cli-new-project.png)
 
 ### Edit the GitLab CI/CD file
 
 There are 2 jobs in the pipeline code below:
-1. Fetch variables from Conjur
+1. Fetch variables from Conjur (using `docker.io/alpine/curl:latest` image)
   - Authenticate to Conjur `authn-jwt/gitlab` using `CI_JOB_JWT_V2` for a session token
   - Retrive AWS credentials using the session token
-  - Pass the credentials to the next job using `artifacts: reports: dotenv:`
-2. Check caller AWS STS token in AWS variables from Conjur
+  - Pass the credentials to the next job using `artifacts:`, `reports:, `dotenv:`
+2.Check caller AWS STS token via AWS CLI using variables from Conjur (using `docker.io/amazon/aws-cli:latest` image)
   - Run AWS CLI perform a `sts get-caller-identity` command using the credentials from previous job
 
-```console
+```yaml
 variables:
-  AWS_DEFAULT_REGION: ap-southeast-1
+  AWS_REGION: ap-southeast-1
 Fetch variables from Conjur:
+# Using default image docker.io/alpine/curl:latest configured in gitlab runner
   stage: .pre
+  before_script:
+    - 'SESSIONTOKEN=$(curl -k -X POST https://conjur.vx/authn-jwt/gitlab/cyberark/authenticate -H "Content-Type: application/x-www-form-urlencoded" -H "Accept-Encoding: base64" --data-urlencode "jwt=$CI_JOB_JWT_V2")'
+    - 'AWS_ACCESS_KEY_ID=$(curl -k -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/aws_api/awsakid)'
+    - 'AWS_SECRET_ACCESS_KEY=$(curl -k -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/aws_api/awssak)'
   script:
-    - 'SESSIONTOKEN=$(curl -X POST https://conjur.vx/authn-jwt/gitlab/cyberark/authenticate -H "Content-Type: application/x-www-form-urlencoded" -H "Accept-Encoding: base64" --data-urlencode "jwt=$CI_JOB_JWT_V2")'
-    - 'AWS_ACCESS_KEY_ID=$(curl -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/aws_api/awsakid)'
-    - 'AWS_SECRET_ACCESS_KEY=$(curl -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/aws_api/awssak)'
     - echo AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID >> conjurVariables.env
     - echo AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY >> conjurVariables.env
   artifacts:
     reports:
       dotenv: conjurVariables.env
-Check caller AWS STS token in AWS using variables from Conjur:
-  stage: test
+Check caller AWS STS token via AWS CLI using variables from Conjur:
+  image:
+    name: docker.io/amazon/aws-cli:latest
+    entrypoint: [""]
   script:
     - aws sts get-caller-identity
 ```
 
-![image](images/aws-editor.png)
+![image](images/aws-cli-editor.png)
 
 ### Pipeline run results
 
 Both jobs passed in the pipeline:
 
-![image](images/aws-pipeline-passed.png)
+![image](images/aws-cli-pipeline-passed.png)
 
 Output for fetch variables job:
 
-![image](images/aws-job-1.png)
+![image](images/aws-cli-job-1.png)
 
 Output for list users job:
 
-![image](images/aws-job-2.png)
+![image](images/aws-cli-job-2.png)
 
+## 5.3. Configure AWS Terraform Demo project
+
+### Create a new project
+
+☝️ Note: the `project namepace` + `project slug` forms the `project path`, this must match the `host identity` created in the Conjur policy
+
+![image](images/aws-tf-new-project.png)
+
+### Create the Terraform `main.tf` file:
+
+```terraform
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+      version = "~> 4.0"
+    }
+  }
+}
+
+provider "aws" {} # Empty because using environment variables
+
+data "aws_caller_identity" "current" {}
+
+output "account_id" {
+  value = data.aws_caller_identity.current.account_id
+}
+
+output "caller_arn" {
+  value = data.aws_caller_identity.current.arn
+}
+
+output "caller_user" {
+  value = data.aws_caller_identity.current.user_id
+}
+```
+
+![image](images/aws-tf-main.tf.png)
+
+### Edit the GitLab CI/CD file
+
+There are 2 jobs in the pipeline code below:
+1. Fetch variables from Conjur (using `docker.io/alpine/curl:latest` image)
+  - Authenticate to Conjur `authn-jwt/gitlab` using `CI_JOB_JWT_V2` for a session token
+  - Retrive AWS credentials using the session token
+  - Pass the credentials to the next job using `artifacts:`, `reports:, `dotenv:`
+2.Check caller AWS STS token via Terrform using variables from Conjur (using `docker.io/hashicorp/terraform:latest` image)
+  - Run Terraform to execute the AWS actions in the `main.tf`
+  - The AWS credentials is passed to the Terraform container from the previous job
+
+```yaml
+variables:
+  AWS_REGION: ap-southeast-1
+Fetch variables from Conjur:
+# Using default image docker.io/alpine/curl:latest configured in gitlab runner
+  stage: .pre
+  before_script:
+    - 'SESSIONTOKEN=$(curl -k -X POST https://conjur.vx/authn-jwt/gitlab/cyberark/authenticate -H "Content-Type: application/x-www-form-urlencoded" -H "Accept-Encoding: base64" --data-urlencode "jwt=$CI_JOB_JWT_V2")'
+    - 'AWS_ACCESS_KEY_ID=$(curl -k -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/aws_api/awsakid)'
+    - 'AWS_SECRET_ACCESS_KEY=$(curl -k -H "Authorization: Token token=\"$SESSIONTOKEN\"" https://conjur.vx/secrets/cyberark/variable/aws_api/awssak)'
+  script:
+    - echo AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID >> conjurVariables.env
+    - echo AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY >> conjurVariables.env
+  artifacts:
+    reports:
+      dotenv: conjurVariables.env
+Check caller AWS STS token via Terraform using variables from Conjur:
+  image:
+    name: docker.io/hashicorp/terraform:latest
+    entrypoint:
+      - '/usr/bin/env'
+      - 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+  before_script:
+    - rm -rf .terraform
+    - terraform --version
+    - terraform init
+  script:
+    - terraform plan
+```
+
+![image](images/aws-tf-editor.png)
+
+### Pipeline run results
+
+Both jobs passed in the pipeline:
+
+![image](images/aws-tf-pipeline-passed.png)
+
+Output for fetch variables job:
+
+![image](images/aws-tf-job-1.png)
+
+Output for list users job:
+
+![image](images/aws-tf-job-2.png)
 
 # Archived - Trusting CA certificate in Conjur container
 

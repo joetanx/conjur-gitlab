@@ -8,9 +8,13 @@
   - !layer
   - &gitlab-hosts
     - !host
-      id: cybr/aws-access-key-demo
+      id: cybr/aws-cli-demo
       annotations:
-        authn-jwt/gitlab/sub: project_path:cybr/aws-access-key-demo:ref_type:branch:ref:main
+        authn-jwt/gitlab/sub: project_path:cybr/aws-cli-demo:ref_type:branch:ref:main
+    - !host
+      id: cybr/aws-terraform-demo
+      annotations:
+        authn-jwt/gitlab/sub: project_path:cybr/aws-terraform-demo:ref_type:branch:ref:main
     - !host
       id: cybr/mysql-demo
       annotations:
@@ -23,7 +27,10 @@
   member: !layer jwt-apps/gitlab
 - !grant
   role: !group aws_api/consumers
-  member: !host jwt-apps/gitlab/cybr/aws-access-key-demo
+  member: !host jwt-apps/gitlab/cybr/aws-cli-demo
+- !grant
+  role: !group aws_api/consumers
+  member: !host jwt-apps/gitlab/cybr/aws-terraform-demo
 - !grant
   role: !group db_cicd/consumers
   member: !host jwt-apps/gitlab/cybr/mysql-demo

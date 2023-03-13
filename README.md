@@ -498,9 +498,7 @@ Fetch variables from Conjur:
 Check caller AWS STS token via Terraform using variables from Conjur:
   image:
     name: docker.io/hashicorp/terraform:latest
-    entrypoint:
-      - '/usr/bin/env'
-      - 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+    entrypoint: [""]
   before_script:
     - rm -rf .terraform
     - terraform --version

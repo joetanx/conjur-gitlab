@@ -329,7 +329,7 @@ There are 2 jobs in the pipeline code below:
 1. Fetch variables from Conjur (using `docker.io/alpine/curl:latest` image)
   - Authenticate to Conjur `authn-jwt/gitlab` using `CI_JOB_JWT_V2` for a session token
   - Retrive database credentials using the session token
-  - Pass the credentials to the next job using `artifacts:`, `reports:, `dotenv:`
+  - Pass the credentials to the next job using `artifacts:`, `reports:`, `dotenv:`
 2. Get a random row from database using variables from Conjur (using `docker.io/library/mysql:latest` image)
   - Login to the MySQL database to perform a `SELECT` command using the credentials from previous job
 
@@ -385,7 +385,7 @@ There are 2 jobs in the pipeline code below:
 1. Fetch variables from Conjur (using `docker.io/alpine/curl:latest` image)
   - Authenticate to Conjur `authn-jwt/gitlab` using `CI_JOB_JWT_V2` for a session token
   - Retrive AWS credentials using the session token
-  - Pass the credentials to the next job using `artifacts:`, `reports:, `dotenv:`
+  - Pass the credentials to the next job using `artifacts:`, `reports:`, `dotenv:`
 2.Check caller AWS STS token via AWS CLI using variables from Conjur (using `docker.io/amazon/aws-cli:latest` image)
   - Run AWS CLI perform a `sts get-caller-identity` command using the credentials from previous job
 
@@ -474,7 +474,7 @@ There are 2 jobs in the pipeline code below:
 1. Fetch variables from Conjur (using `docker.io/alpine/curl:latest` image)
   - Authenticate to Conjur `authn-jwt/gitlab` using `CI_JOB_JWT_V2` for a session token
   - Retrive AWS credentials using the session token
-  - Pass the credentials to the next job using `artifacts:`, `reports:, `dotenv:`
+  - Pass the credentials to the next job using `artifacts:`, `reports:`, `dotenv:`
 2.Check caller AWS STS token via Terrform using variables from Conjur (using `docker.io/hashicorp/terraform:latest` image)
   - Run Terraform to execute the AWS actions in the `main.tf`
   - The AWS credentials is passed to the Terraform container from the previous job

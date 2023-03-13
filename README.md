@@ -81,11 +81,11 @@
 
 # 1. Setup MySQL database
 
-- Setup MySQL database according to this guide: <https://github.com/joetanx/mysql-install>
+- Setup MySQL database according to this guide: https://github.com/joetanx/setup/blob/main/mysql.md
 
 # 2. Setup Conjur master
 
-- Setup Conjur master according to this guide: <https://github.com/joetanx/conjur-master>
+- Setup Conjur master according to this guide: https://github.com/joetanx/setup/blob/main/conjur.md
 
 # 3. Setup GitLab
 

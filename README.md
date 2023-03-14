@@ -500,8 +500,6 @@ Check caller AWS STS token via Terraform using variables from Conjur:
     name: docker.io/hashicorp/terraform:latest
     entrypoint: [""]
   before_script:
-    - rm -rf .terraform
-    - terraform --version
     - terraform init
   script:
     - terraform plan

@@ -8,7 +8,7 @@
   - !layer
   - &gitlab-hosts
     - !host
-      id: cybr/aws-terraform-demo
+      id: cybr/aws-cli-demo
       annotations:
         authn-jwt/gitlab/sub: project_path:cybr/aws-cli-demo:ref_type:branch:ref:main
     - !host

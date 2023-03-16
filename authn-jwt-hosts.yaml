@@ -10,7 +10,7 @@
     - !host
       id: cybr/aws-terraform-demo
       annotations:
-        authn-jwt/gitlab/sub: project_path:cybr/aws-terraform-demo:ref_type:branch:ref:main
+        authn-jwt/gitlab/sub: project_path:cybr/aws-cli-demo:ref_type:branch:ref:main
     - !host
       id: cybr/mysql-demo
       annotations:

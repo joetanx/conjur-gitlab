@@ -364,7 +364,7 @@ Output for fetch variables job:
 
 ![image](images/mysql-job-1.png)
 
-Output for show databases job:
+Output for MySQL job:
 
 ![image](images/mysql-job-2.png)
 
@@ -430,7 +430,7 @@ Output for fetch variables job:
 
 ![image](images/aws-cli-job-1.png)
 
-Output for list users job:
+Output for AWS CLI job:
 
 ![image](images/aws-cli-job-2.png)
 

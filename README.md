@@ -66,10 +66,10 @@
 
 ### Software Versions
 
-- RHEL 9.1
-- Podman 4.2
-- GitLab 15.9.3
-- Conjur Enterprise 12.9.0
+- RHEL 9.2
+- Podman 4.4.1
+- GitLab 15.11.4
+- Conjur Enterprise 13.0
 
 ### Servers
 

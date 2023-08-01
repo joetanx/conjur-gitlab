@@ -326,31 +326,7 @@ There are 2 stages in the pipeline code below:
   - Pass the credentials to the next stage using `artifacts:`, `reports:`, `dotenv:`
 2. Run MySQL using variables from Conjur: (using `docker.io/library/mysql:latest` image)
 
-```yaml
-variables:
-  CONJUR_APPLIANCE_URL: "https://conjur.vx"
-  CONJUR_ACCOUNT: "cyberark"
-  CONJUR_AUTHN_JWT_SERVICE_ID: "gitlab"
-  CONJUR_AUTHN_JWT_TOKEN: "${CI_JOB_JWT_V2}"
-  CONJUR_CERT_FILE: "central.pem"
-Fetch variables from Conjur:
-  stage: .pre
-  image:
-    name: docker.io/nfmsjoeg/authn-jwt-gitlab:latest
-  script:
-    - echo MYSQLUSER=$(CONJUR_SECRET_ID="db_cicd/username" /authn-jwt-gitlab) >> conjurVariables.env
-    - echo MYSQLPASSWORD=$(CONJUR_SECRET_ID="db_cicd/password" /authn-jwt-gitlab) >> conjurVariables.env
-  artifacts:
-    reports:
-      dotenv: conjurVariables.env
-Run MySQL using variables from Conjur:
-  stage: test
-  image:
-    name: docker.io/library/mysql:latest
-    entrypoint: [""]
-  script:
-    - mysql --host=mysql.vx --user=$MYSQLUSER --password=$MYSQLPASSWORD -e 'SELECT city.Name as City,country.name as Country,city.District,city.Population FROM world.city,world.country WHERE city.CountryCode = country.Code ORDER BY RAND() LIMIT 0,1;'
-```
+https://github.com/joetanx/conjur-gitlab/blob/8d1a4cb24c6178bf48a5d614e6c21453e3f76a5c/mysql-demo/.gitlab-ci.yml#L1-L23
 
 ![image](images/mysql-editor.png)
 
@@ -391,32 +367,7 @@ There are 2 stages in the pipeline code below:
   - Pass the credentials to the next stage using `artifacts:`, `reports:`, `dotenv:`
 2. Run AWS CLI using variables from Conjur (using `docker.io/amazon/aws-cli:latest` image)
 
-```yaml
-variables:
-  AWS_REGION: ap-southeast-1
-  CONJUR_APPLIANCE_URL: "https://conjur.vx"
-  CONJUR_ACCOUNT: "cyberark"
-  CONJUR_AUTHN_JWT_SERVICE_ID: "gitlab"
-  CONJUR_AUTHN_JWT_TOKEN: "${CI_JOB_JWT_V2}"
-  CONJUR_CERT_FILE: "central.pem"
-Fetch variables from Conjur:
-  stage: .pre
-  image:
-    name: docker.io/nfmsjoeg/authn-jwt-gitlab:latest
-  script:
-    - echo AWS_ACCESS_KEY_ID=$(CONJUR_SECRET_ID="aws_api/awsakid" /authn-jwt-gitlab) >> conjurVariables.env
-    - echo AWS_SECRET_ACCESS_KEY=$(CONJUR_SECRET_ID="aws_api/awssak" /authn-jwt-gitlab) >> conjurVariables.env
-  artifacts:
-    reports:
-      dotenv: conjurVariables.env
-Run AWS CLI using variables from Conjur:
-  stage: test
-  image:
-    name: docker.io/amazon/aws-cli:latest
-    entrypoint: [""]
-  script:
-    - aws sts get-caller-identity
-```
+https://github.com/joetanx/conjur-gitlab/blob/8d1a4cb24c6178bf48a5d614e6c21453e3f76a5c/aws-cli-demo/.gitlab-ci.yml#L1-L24
 
 ![image](images/aws-cli-editor.png)
 

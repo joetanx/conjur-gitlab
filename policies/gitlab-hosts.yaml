@@ -1,0 +1,30 @@
+- !group
+  id: gitlab-admins
+  owner: !policy root
+- !policy
+  id: jwt-apps/gitlab
+  owner: !group gitlab-admins
+  body:
+  - !layer
+  - &gitlab-hosts
+    - !host
+      id: root/aws-connection-test
+      annotations:
+        authn-jwt/gitlab/sub: project_path:root/aws-connection-test:ref_type:branch:ref:main
+    - !host
+      id: root/aws-create-s3-bucket
+      annotations:
+        authn-jwt/gitlab/sub: project_path:root/aws-create-s3-bucket:ref_type:branch:ref:main
+    - !host
+      id: root/aws-verify-and-cleanup-s3-bucket
+      annotations:
+        authn-jwt/gitlab/sub: project_path:root/aws-verify-and-cleanup-s3-bucket:ref_type:branch:ref:main
+  - !grant 
+    role: !layer
+    members: *gitlab-hosts
+- !grant
+  role: !group conjur/authn-jwt/gitlab/consumers
+  member: !layer jwt-apps/gitlab
+- !grant
+  role: !group aws_api/consumers
+  member: !layer jwt-apps/gitlab

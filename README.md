@@ -332,7 +332,7 @@ https://github.com/joetanx/conjur-gitlab/blob/c122b728a15a1ab5397d4e54029d16b3b9
 
 ![aws-verify-and-cleanup-s3-bucket-2](https://github.com/joetanx/conjur-gitlab/assets/90442032/94119da1-92ce-4c74-b3fd-b0e7b8ab691f)
 
-#### 4.2.4. Pipeline run results
+#### 4.2.3. Pipeline run results
 
 Both jobs passed in the pipeline (manual job is pending manual activation):
 
